@@ -667,7 +667,9 @@ static void engine_service_shutdown(struct xdma_engine *engine)
 	engine->running = 0;
 
 	/* awake task on engine's shutdown wait queue */
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+	swake_up_one(&engine->shutdown_wq);
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 	swake_up(&engine->shutdown_wq);
 #else
 	wake_up_interruptible(&engine->shutdown_wq);
@@ -686,7 +688,9 @@ struct xdma_transfer *engine_transfer_completion(struct xdma_engine *engine,
 
 	/* synchronous I/O? */
 	/* awake task on transfer's wait queue */
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+	swake_up_one(&transfer->wq);
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 	swake_up(&transfer->wq);
 #else
 	wake_up_interruptible(&transfer->wq);
@@ -856,7 +860,9 @@ static void engine_service_perf(struct xdma_engine *engine, u32 desc_completed)
 			 * wake any XDMA_PERF_IOCTL_STOP waiting for
 			 * the performance run to finish
 			 */
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+			swake_up_one(&engine->xdma_perf_wq);
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 			swake_up(&engine->xdma_perf_wq);
 #else
 			wake_up_interruptible(&engine->xdma_perf_wq);
@@ -991,7 +997,9 @@ static int engine_service_cyclic_interrupt(struct xdma_engine *engine)
 		if (eop_count > 0) {
 			//engine->eop_found = 1;
 		}
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+		swake_up_one(&xfer->wq);
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 		swake_up(&xfer->wq);
 #else
 		wake_up_interruptible(&xfer->wq);
@@ -1001,7 +1009,9 @@ static int engine_service_cyclic_interrupt(struct xdma_engine *engine)
 			/* awake task on transfer's wait queue */
 			dbg_tfr("wake_up_interruptible() due to %d EOP's\n", eop_count);
 			engine->eop_found = 1;
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+			swake_up_one(&xfer->wq);
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 			swake_up(&xfer->wq);
 #else
 			wake_up_interruptible(&xfer->wq);
@@ -1058,7 +1068,9 @@ static void engine_service_resume(struct xdma_engine *engine)
 		} else if (engine->shutdown & ENGINE_SHUTDOWN_REQUEST) {
 			engine->shutdown |= ENGINE_SHUTDOWN_IDLE;
 			/* awake task on engine's shutdown wait queue */
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+			swake_up_one(&engine->shutdown_wq);
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 			swake_up(&engine->shutdown_wq);
 #else
 			wake_up_interruptible(&engine->shutdown_wq);
@@ -3123,7 +3135,9 @@ ssize_t xdma_xfer_submit(void *dev_hndl, int channel, bool write, u64 ep_addr,
 			engine_service_poll(engine, desc_count);
 
 		} else {
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+			swait_event_interruptible_timeout_exclusive(xfer->wq,
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 			swait_event_interruptible_timeout(xfer->wq,
 #else
 			wait_event_interruptible_timeout(xfer->wq,
@@ -3939,7 +3953,9 @@ static int transfer_monitor_cyclic(struct xdma_engine *engine,
 		if (enable_credit_mp){
 			dbg_tfr("%s: rx_head=%d,rx_tail=%d, wait ...\n",
 				engine->name, engine->rx_head, engine->rx_tail);
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+			rc = swait_event_interruptible_timeout_exclusive( transfer->wq,
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 			rc = swait_event_interruptible_timeout( transfer->wq,
 #else
 			rc = wait_event_interruptible_timeout( transfer->wq,
@@ -3951,7 +3967,9 @@ static int transfer_monitor_cyclic(struct xdma_engine *engine,
 				 engine->name, rc, engine->rx_head,
 				engine->rx_tail, engine->rx_overrun);
 		} else {
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+			rc = swait_event_interruptible_timeout_exclusive( transfer->wq,
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 			rc = swait_event_interruptible_timeout( transfer->wq,
 #else
 			rc = wait_event_interruptible_timeout( transfer->wq,
@@ -4376,7 +4394,9 @@ static int cyclic_shutdown_interrupt(struct xdma_engine *engine)
 
 	BUG_ON(!engine);
 
-#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
+#if	LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+	rc = swait_event_interruptible_timeout_exclusive(engine->shutdown_wq,
+#elif	LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0)
 	rc = swait_event_interruptible_timeout(engine->shutdown_wq,
 #else
 	rc = wait_event_interruptible_timeout(engine->shutdown_wq,
