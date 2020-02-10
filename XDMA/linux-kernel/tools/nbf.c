@@ -21,6 +21,7 @@
 #include <termios.h>
 #include <pthread.h> 
 #include <limits.h> 
+#include <stdbool.h>
 
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -90,6 +91,40 @@ void *getCharThread(void * queue) {
     enqueue((struct Queue*)queue, ch);
   }
 } 
+
+static struct termios oldtty;
+static int old_fd0_flags;
+
+static void term_exit(void)
+{
+    tcsetattr (0, TCSANOW, &oldtty);
+    fcntl(0, F_SETFL, old_fd0_flags);
+}
+
+static void term_init(bool allow_ctrlc)
+{
+    struct termios tty;
+
+    memset(&tty, 0, sizeof(tty));
+    tcgetattr (0, &tty);
+    oldtty = tty;
+    old_fd0_flags = fcntl(0, F_GETFL);
+
+    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP
+                          |INLCR|IGNCR|ICRNL|IXON);
+    tty.c_oflag |= OPOST;
+    tty.c_lflag &= ~(ECHO|ECHONL|ICANON|IEXTEN);
+    if (!allow_ctrlc)
+        tty.c_lflag &= ~ISIG;
+    tty.c_cflag &= ~(CSIZE|PARENB);
+    tty.c_cflag |= CS8;
+    tty.c_cc[VMIN] = 1;
+    tty.c_cc[VTIME] = 0;
+
+    tcsetattr (0, TCSANOW, &tty);
+
+    atexit(term_exit);
+}
 
 int main(int argc, char **argv)
 {
@@ -229,6 +264,8 @@ int main(int argc, char **argv)
         pthread_t thread_id; 
         pthread_create(&thread_id, NULL, getCharThread, (void *)queue); 
         
+        term_init(1);
+        
         while (1){
             // check if empty
 			read_result = *map_base_ptr;
@@ -284,6 +321,8 @@ int main(int argc, char **argv)
                 }
             }
         }
+        
+        term_exit();
         
 		fflush(stdout);
 	}
