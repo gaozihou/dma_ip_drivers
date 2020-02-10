@@ -259,10 +259,10 @@ int main(int argc, char **argv)
                     }
                 }
 */
-                if ((addr_result>>12) == 0x3000){
+                if ((addr_result>>12) == 0x101){
                     printf("%c", data_result);
                     fflush(stdout);
-                } else if ((addr_result>>12) == 0x3002){
+                } else if ((addr_result>>12) == 0x102){
                     if (data_result == 0){
                       printf("[CORE%0x FSH] PASS\n", core_id);
                     } else {
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
                     if (counter == num_cores){
                         break;
                     }
-                } else if ((addr_result>>12) == 0x3001){
+                } else if ((addr_result>>12) == 0x100){
                     if (isEmpty(queue)) {
                         *load_addr_ptr = htoll((uint32_t)0xFFFFFFFF);
                         *load_addr_ptr = htoll((uint32_t)0xFFFFFFFF);
