@@ -302,8 +302,10 @@ int main(int argc, char **argv)
                 } else if ((addr_result>>12) == 0x102){
                     if (data_result == 0){
                       printf("[CORE%0x FSH] PASS\n", core_id);
+                      printf("%0x\n", data_result);
                     } else {
                       printf("[CORE%0x FSH] FAIL\n", core_id);
+                      printf("%0x\n", data_result);
                     }
                     fflush(stdout);
                     counter++;
