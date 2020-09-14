@@ -320,7 +320,11 @@ int main(int argc, char **argv)
                         *load_addr_ptr = htoll((uint32_t)(dequeue(queue)));
                         *load_addr_ptr = htoll((uint32_t)0x00000000);
                     }
-                }
+                } else {
+		  // Return 0 for spurious requests
+		  *load_addr_ptr = htoll((uint32_t)0x00000000);
+		  *load_addr_ptr = htoll((uint32_t)0x00000000);
+		}
             }
         }
         
