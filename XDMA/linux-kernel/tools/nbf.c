@@ -277,7 +277,7 @@ int main(int argc, char **argv)
                 addr_result = ltohl(addr_result);
                 data_result = *virt_addr_ptr;
                 data_result = ltohl(data_result);
-                
+
                 uint32_t core_id = (addr_result & 0x00000FFF) >> 3;
 /*                
                 if ((addr_result>>12) == 0x3000){

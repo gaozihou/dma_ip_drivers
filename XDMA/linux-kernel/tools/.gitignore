@@ -1,0 +1,5 @@
+*.riscv
+*.mem
+*.nbf
+*.word
+nbf
